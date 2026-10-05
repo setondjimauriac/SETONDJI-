@@ -1,0 +1,35 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Organiser le projet
+        run: |
+          mkdir -p app/src/main/java/com/example/voicemsg
+          cp *.kt app/src/main/java/com/example/voicemsg/
+          cp AndroidManifest.xml app/src/main/AndroidManifest.xml
+          cp app.gradle.kts app/build.gradle.kts
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Compiler
+        run: gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SETONDJI-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
