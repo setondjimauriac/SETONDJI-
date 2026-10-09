@@ -9,7 +9,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.voicemsg"
+        applicationId = "com.setondji.messenger"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
