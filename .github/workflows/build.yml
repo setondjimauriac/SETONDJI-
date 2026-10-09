@@ -16,6 +16,7 @@ jobs:
           cp *.kt app/src/main/java/com/example/voicemsg/
           cp AndroidManifest.xml app/src/main/AndroidManifest.xml
           cp app.gradle.kts app/build.gradle.kts
+          cp -r res app/src/main/res
 
       - uses: actions/setup-java@v4
         with:
