@@ -76,6 +76,10 @@ class NearbyVoiceManager(
         fun onDisconnected()
         fun onTextReceived(text: String)
         fun onFileReceived(file: File, isPhoto: Boolean)
+        fun onEndpointFound(id: String, name: String) {}
+        fun onEndpointLost(id: String) {}
+        fun onPairingRequest(id: String, name: String, code: String) {}
+        fun onPairingEnded() {}
     }
 
     private val client = Nearby.getConnectionsClient(context)
@@ -119,6 +123,23 @@ class NearbyVoiceManager(
         }
     }
 
+    fun connectTo(id: String, name: String) {
+        peerName = name
+        listener.onStatus("Connexion à $name…")
+        client.requestConnection("Moi", id, connectionCallback)
+            .addOnFailureListener { listener.onStatus("Erreur : ${it.message}") }
+    }
+
+    fun acceptPairing(id: String) {
+        client.acceptConnection(id, payloadCallback)
+            .addOnFailureListener { listener.onStatus("Erreur : ${it.message}") }
+    }
+
+    fun rejectPairing(id: String) {
+        client.rejectConnection(id)
+        listener.onPairingEnded()
+    }
+
     fun disconnect() {
         client.stopAdvertising()
         client.stopDiscovery()
@@ -129,20 +150,25 @@ class NearbyVoiceManager(
 
     private val discoveryCallback = object : EndpointDiscoveryCallback() {
         override fun onEndpointFound(id: String, info: DiscoveredEndpointInfo) {
-            peerName = info.endpointName
-            client.requestConnection("Moi", id, connectionCallback)
+            // On ne se connecte plus automatiquement : on ajoute à la liste
+            listener.onEndpointFound(id, info.endpointName)
         }
 
-        override fun onEndpointLost(id: String) {}
+        override fun onEndpointLost(id: String) {
+            listener.onEndpointLost(id)
+        }
     }
 
     private val connectionCallback = object : ConnectionLifecycleCallback() {
         override fun onConnectionInitiated(id: String, info: ConnectionInfo) {
+            // Sécurité : on n'accepte PAS automatiquement.
+            // Les deux utilisateurs comparent le même code avant de confirmer.
             peerName = info.endpointName
-            client.acceptConnection(id, payloadCallback)
+            listener.onPairingRequest(id, info.endpointName, info.authenticationDigits)
         }
 
         override fun onConnectionResult(id: String, result: ConnectionResolution) {
+            listener.onPairingEnded()
             if (result.status.isSuccess) {
                 endpointId = id
                 client.stopAdvertising()
